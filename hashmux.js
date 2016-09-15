@@ -1,4 +1,4 @@
-// hashmux - An URL hash -> JavaScript function router
+// hashmux - An URL hash to JavaScript function router
 // Copyright (C) 2016 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify

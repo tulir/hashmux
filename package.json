@@ -1,0 +1,22 @@
+{
+  "name": "hashmux",
+  "version": "0.1.0",
+  "description": "An URL hash -> JavaScript function router",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tulir/hashmux.git"
+  },
+  "keywords": [
+    "url",
+    "hash",
+    "javascript",
+    "router",
+    "mux"
+  ],
+  "author": "Tulir Asokan",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/tulir/hashmux/issues"
+  },
+  "homepage": "https://github.com/tulir/hashmux"
+}

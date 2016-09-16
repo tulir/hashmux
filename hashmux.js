@@ -19,10 +19,13 @@ var anythingRegex = "([^/]+?)"
 var intRegex = "([0-9]+)"
 var floatRegex = "([0-9\\.]+)"
 
-function PageSystem(notfound) {
+function Hashmux() {
 	"use strict"
 	this.handlers = []
-	this.notfound = notfound
+	this.notfound = function(page){
+		console.log("Page", page, "not found!")
+		console.log("PS: Change the `notfound` function of your Hashmux object to override this message!")
+	}
 }
 
 function Handler(args, regex, func) {
@@ -35,7 +38,7 @@ function Handler(args, regex, func) {
 	this.func = func
 }
 
-PageSystem.prototype.addHandler = function(path, func) {
+Hashmux.prototype.addHandler = function(path, func) {
 	"use strict"
 	if (path === undefined || path.length === 0) {
 		path = "/"
@@ -74,7 +77,7 @@ PageSystem.prototype.addHandler = function(path, func) {
 	this.handlers[this.handlers.length] = new Handler(args, "^\\/" + regex.join("\\/") + "\\/?$", func)
 }
 
-PageSystem.prototype.update = function() {
+Hashmux.prototype.update = function() {
 	"use strict"
 	var hash = window.location.hash
 	if (hash.length === 0) {
@@ -98,12 +101,10 @@ PageSystem.prototype.update = function() {
 			return
 		}
 	}
-	if (this.notfound !== undefined) {
-		this.notfound(hash)
-	}
+	this.notfound(hash)
 }
 
-PageSystem.prototype.listen = function() {
+Hashmux.prototype.listen = function() {
 	"use strict"
 	var pages = this
 	window.onhashchange = function() {

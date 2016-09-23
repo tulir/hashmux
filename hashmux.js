@@ -13,32 +13,34 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-var regexEscape = /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g
-var anythingRegex = "([^/]+?)"
-var intRegex = "([0-9]+)"
-var floatRegex = "([0-9\\.]+)"
-
 function Hashmux() {
 	"use strict"
 	this.handlers = []
-	this.notfound = function(page){
-		console.log("Page", page, "not found!")
-		console.log("PS: Change the `notfound` function of your Hashmux object to override this message!")
+	this.errors = {
+		404: function(data){
+			console.error("Page", data.page, "not found!")
+		}
 	}
 }
 
-function Handler(args, regex, func) {
+Hashmux.prototype.error = function(err, data) {
 	"use strict"
-	if (args === undefined) {
-		args = []
+	if (this.errors.hasOwnProperty(err)) {
+		this.errors[err](data)
+	} else {
+		this.errors[520](data)
 	}
-	this.args = args
-	this.regex = new RegExp(regex, "")
-	this.func = func
 }
 
-Hashmux.prototype.addHandler = function(path, func) {
+Hashmux.prototype.handleError = function(errCode, func) {
+	"use strict"
+	this.errors[errCode] = func
+}
+
+var pieceMatcher = /\{([a-zA-Z]+?)(\:[^}]+?)?\}/g
+var regexEscape = /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g
+
+Hashmux.prototype.handle = function(path, func, caseSensitive) {
 	"use strict"
 	if (path === undefined || path.length === 0) {
 		path = "/"
@@ -46,35 +48,43 @@ Hashmux.prototype.addHandler = function(path, func) {
 		func = path
 		path = "/"
 	}
+	if (typeof(func) !== "function") {
+		func = function() {
+			console.error("No handler function provided for", path)
+		}
+	}
+
 	var pieces = path.split("/").slice(1)
 	var regex = []
 	var args = []
-	pieces.forEach(function(obj, i) {
-		if (obj.charAt(0) === '{' && obj.charAt(obj.length - 1) === '}') {
-			obj = obj.slice(1, obj.length - 1)
-			var parts = obj.split(",")
-			if (parts.length > 1) {
-				args[args.length] = parts[0]
-				switch(parts[1]) {
-				case "int":
-					regex[i] = intRegex
-					break
-				case "float":
-					regex[i] = floatRegex
-					break
-				case "string":
-					regex[i] = anythingRegex
-					break
-				}
+	var flags = caseSensitive ? "i" : ""
+
+	var trailingAnything = false
+	if (pieces.length > 1 && pieces[pieces.length - 1].length === 0) {
+		pieces = pieces.slice(0, pieces.length - 1)
+		trailingAnything = true
+	}
+
+	pieces.forEach(function(piece, i) {
+		var match = pieceMatcher.exec(piece)
+		if (match !== null && match.length > 1) {
+			match = match.slice(1)
+			args[i] = match[0]
+			if (match[1] !== undefined && match[1].length > 0) {
+				regex[i] = new RegExp("^" + match[1].substr(1) + "$", flags)
 			} else {
-				regex[i] = anythingRegex
-				args[args.length] = obj
+				regex[i] = new RegExp("^.+$", flags)
 			}
 		} else {
-			regex[i] = obj.replace(regexEscape, "\\$&");
+			regex[i] = new RegExp("^" + piece.replace(regexEscape, "\\$&") + "$", flags)
 		}
 	})
-	this.handlers[this.handlers.length] = new Handler(args, "^\\/" + regex.join("\\/") + "\\/?$", func)
+	this.handlers[this.handlers.length] = new Handler(args, regex, func, trailingAnything)
+}
+
+Hashmux.prototype.handleRaw = function(handler) {
+	"use strict"
+	this.handlers[this.handlers.length] = handler
 }
 
 Hashmux.prototype.update = function() {
@@ -84,31 +94,74 @@ Hashmux.prototype.update = function() {
 		hash = "#/"
 	}
 
-	hash = hash.substr(1)
+	var parts = hash.split("/").slice(1)
 	for(var i = 0; i < this.handlers.length; i++) {
 		var handler = this.handlers[i]
 		if (handler === undefined) {
 			continue
 		}
-		var match = handler.regex.exec(hash)
-		if (match !== null && match.length !== 0) {
-			var map = {}
-			match = match.slice(1)
-			for(var i = 0; i < handler.args.length; i++) {
-				map[handler.args[i]] = match[i]
-			}
-			handler.func(map)
-			return
+		var val = handler.handle(parts)
+		if (val === undefined) {
+			continue
 		}
+		var output = handler.func(val)
+		if (output !== undefined) {
+			output.page = hash.substr(1)
+			if (output.status !== undefined && output.status !== 200) {
+				this.error(output.status, output)
+			}
+		}
+		return
 	}
-	this.notfound(hash)
+	this.error(404, {page: hash.substr(1)})
 }
 
 Hashmux.prototype.listen = function() {
 	"use strict"
-	var pages = this
+	var mux = this
 	window.onhashchange = function() {
-		pages.update()
+		mux.update()
 	}
-	this.update()
+	mux.update()
+}
+
+function Handler(args, regex, func, trailingAnything) {
+	"use strict"
+	if (args === undefined) {
+		args = []
+	}
+	this.args = args
+	this.regex = regex
+	this.func = func
+	this.trailingAnything = trailingAnything ? true : false
+}
+
+Handler.prototype.handle = function(parts) {
+	"use strict"
+	if (this.regex.length > parts.length) {
+		return undefined
+	} else if (this.regex.length < parts.length && !this.trailingAnything) {
+		return undefined
+	}
+	var values = []
+	var i = 0
+	for (; i < this.regex.length; i++) {
+		var match = this.regex[i].exec(parts[i])
+		if (match === null || match.length === 0) {
+			return undefined
+		}
+
+		var key = values.length
+		if (this.args.length > i && this.args[i] !== undefined) {
+			key = this.args[i]
+		}
+
+		values[key] = match[0]
+	}
+	if (this.trailingAnything) {
+		for(; i < parts.length; i++) {
+			values[i] = parts[i]
+		}
+	}
+	return values
 }

@@ -1,22 +1,25 @@
 {
-  "name": "hashmux",
-  "version": "2.0.0",
-  "description": "An URL hash to JavaScript function router",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tulir/hashmux.git"
-  },
-  "keywords": [
-    "url",
-    "hash",
-    "javascript",
-    "router",
-    "mux"
-  ],
-  "author": "Tulir Asokan",
-  "license": "GPL-3.0",
-  "bugs": {
-    "url": "https://github.com/tulir/hashmux/issues"
-  },
-  "homepage": "https://github.com/tulir/hashmux"
+    "name": "hashmux",
+    "version": "2.0.1",
+    "description": "An URL hash to JavaScript function router",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/tulir/hashmux.git"
+    },
+    "keywords": [
+        "url",
+        "hash",
+        "javascript",
+        "router",
+        "mux"
+    ],
+    "author": "Tulir Asokan",
+    "license": "GPL-3.0",
+    "bugs": {
+        "url": "https://github.com/tulir/hashmux/issues"
+    },
+    "homepage": "https://github.com/tulir/hashmux",
+    "devDependencies": {
+        "uglify-js": "2.7.3"
+    }
 }

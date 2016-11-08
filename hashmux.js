@@ -105,7 +105,7 @@ Hashmux.prototype.update = function() {
 			continue
 		}
 		var output = handler.func(val)
-		if (output !== undefined) {
+		if (output !== undefined && typeof(output) === "object") {
 			output.page = hash.substr(1)
 			if (output.status !== undefined && output.status !== 200) {
 				this.error(output.status, output)

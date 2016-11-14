@@ -20,7 +20,9 @@
         "url": "https://github.com/tulir/hashmux/issues"
     },
     "homepage": "https://github.com/tulir/hashmux",
-    "install": "./node_modules/.bin/webpack",
+    "scripts": {
+        "install": "./node_modules/.bin/webpack"
+    },
     "devDependencies": {
         "uglify-js": "2.7.4",
         "webpack": "1.13.3"

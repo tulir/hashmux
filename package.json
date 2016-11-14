@@ -21,6 +21,6 @@
     },
     "homepage": "https://github.com/tulir/hashmux",
     "devDependencies": {
-        "uglify-js": "2.7.3"
+        "uglify-js": "2.7.4"
     }
 }

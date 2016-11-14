@@ -165,3 +165,8 @@ Handler.prototype.handle = function(parts) {
 	}
 	return values
 }
+
+if (typeof module !== undefined && module.exports) {
+	module.exports.Hashmux = Hashmux
+	module.exports.Handler = Handler
+}

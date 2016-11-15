@@ -3,4 +3,4 @@ minify:
 	./node_modules/.bin/webpack
 
 publish: minify
-	npm publish
+	git push && npm publish

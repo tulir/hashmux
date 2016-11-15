@@ -1,6 +1,6 @@
 {
     "name": "hashmux",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "description": "An URL hash to JavaScript function router",
     "repository": {
         "type": "git",
@@ -20,9 +20,6 @@
         "url": "https://github.com/tulir/hashmux/issues"
     },
     "homepage": "https://github.com/tulir/hashmux",
-    "scripts": {
-        "install": "./node_modules/.bin/webpack"
-    },
     "devDependencies": {
         "uglify-js": "2.7.4",
         "webpack": "1.13.3"

@@ -1,6 +1,6 @@
 {
     "name": "hashmux",
-    "version": "2.1.0",
+    "version": "2.1.1",
     "description": "An URL hash to JavaScript function router",
     "repository": {
         "type": "git",

@@ -61,8 +61,8 @@
 	// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	"use strict"
 
-	const pieceMatcher = /\{([a-zA-Z]+?)(\:[^}]+?)?\}/g
-	const regexEscape = /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g
+	const pieceMatcher = /\{([a-zA-Z]+?)(\:[^}]+?)?\}/
+	const regexEscape = /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/
 
 	class Hashmux {
 		constructor() {

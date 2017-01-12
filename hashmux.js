@@ -152,11 +152,11 @@ class Handler {
 				key = this.args[i]
 			}
 
-			values[key] = match[0]
+			values[key] = decodeURIComponent(match[0])
 		}
 		if (this.trailingAnything) {
 			for(; i < parts.length; i++) {
-				values[i] = parts[i]
+				values[i] = decodeURIComponent(parts[i])
 			}
 		}
 		return values

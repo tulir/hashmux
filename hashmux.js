@@ -25,6 +25,10 @@ class Hashmux {
 	 */
 	constructor() {
 		this.handlers = []
+		this.specialHandlers = {
+			prehandle: () => {},
+			posthandle: () => {},
+		}
 		this.errors = {
 			404: (data) => console.error("Page", data.page, "not found!"),
 		}
@@ -87,21 +91,21 @@ class Hashmux {
 			trailingAnything = true
 		}
 
-		pieces.forEach((piece, i) => {
+		for (const [index, piece] of Object.entries(pieces)) {
 			let match = pieceMatcher.exec(piece)
 			if (match !== null && match.length > 1) {
 				match = match.slice(1)
-				args[i] = match[0]
-				if (match[1] !== undefined && match[1].length > 0) {
-					regex[i] = new RegExp(`^${match[1].substr(1)}$`, flags)
+				args[index] = match[0]
+				if (match[index] !== undefined && match[1].length > 0) {
+					regex[index] = new RegExp(`^${match[1].substr(1)}$`, flags)
 				} else {
-					regex[i] = new RegExp("^.+$", flags)
+					regex[index] = new RegExp("^.+$", flags)
 				}
 			} else {
-				regex[i] = new RegExp(`^${piece.replace(regexEscape, "\\$&")}$`,
-						flags)
+				regex[index] = new RegExp(
+						`^${piece.replace(regexEscape, "\\$&")}$`, flags)
 			}
-		})
+		}
 		this.handlers.push(new Handler(args, regex, func, trailingAnything))
 	}
 
@@ -127,16 +131,14 @@ class Hashmux {
 		}
 
 		const parts = hash.split("/").slice(1)
-		for (let i = 0; i < this.handlers.length; i++) {
-			const handler = this.handlers[i]
-			if (handler === undefined) {
-				continue
-			}
+		for (const handler of this.handlers) {
 			const val = handler.handle(parts)
 			if (val === undefined) {
 				continue
 			}
+			this.specialHandlers.prehandle(parts, val)
 			const output = handler.func(val)
+			this.specialHandlers.posthandle(parts, val, output)
 			if (output !== undefined && typeof (output) === "object") {
 				output.page = hash.substr(1)
 				if (output.status !== undefined && output.status !== 200) {

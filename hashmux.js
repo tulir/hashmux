@@ -136,9 +136,13 @@ class Hashmux {
 			if (val === undefined) {
 				continue
 			}
-			this.specialHandlers.prehandle(parts, val)
+			if (this.specialHandlers.prehandle(parts, val)) {
+				return
+			}
 			const output = handler.func(val)
-			this.specialHandlers.posthandle(parts, val, output)
+			if (this.specialHandlers.posthandle(parts, val, output)) {
+				return
+			}
 			if (output !== undefined && typeof (output) === "object") {
 				output.page = hash.substr(1)
 				if (output.status !== undefined && output.status !== 200) {

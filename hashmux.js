@@ -24,6 +24,8 @@ class Hashmux {
 	 * Create an instance of Hashmux.
 	 */
 	constructor() {
+		this.oldHash = window.location.hash
+		this.ignoreUpdate = false
 		this.handlers = []
 		this.specialHandlers = {
 			prehandle: () => {},
@@ -125,6 +127,11 @@ class Hashmux {
 	 * {@link Hashmux#listen} has been called.
 	 */
 	update() {
+		if (this.ignoreUpdate) {
+			this.ignoreUpdate = false
+			return
+		}
+
 		let hash = window.location.hash
 		if (hash.length === 0) {
 			hash = "#/"
@@ -136,11 +143,14 @@ class Hashmux {
 			if (val === undefined) {
 				continue
 			}
-			if (this.specialHandlers.prehandle(parts, val)) {
+			if (this.specialHandlers.prehandle(hash, val)) {
+				this.ignoreUpdate = true
+				window.location.hash = this.oldHash
 				return
 			}
 			const output = handler.func(val)
-			if (this.specialHandlers.posthandle(parts, val, output)) {
+			this.oldHash = hash
+			if (this.specialHandlers.posthandle(hash, val, output)) {
 				return
 			}
 			if (output !== undefined && typeof (output) === "object") {

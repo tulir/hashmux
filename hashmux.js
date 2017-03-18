@@ -93,12 +93,7 @@ class Hashmux {
 			trailingAnything = true
 		}
 
-		for (let index = 0; index < pieces.length; index++) {
-			const piece = pieces[index]
-			if (!piece) {
-				continue
-			}
-
+		pieces.forEach((piece, index) => {
 			let match = pieceMatcher.exec(piece)
 			if (match !== null && match.length > 1) {
 				match = match.slice(1)
@@ -112,7 +107,7 @@ class Hashmux {
 				regex[index] = new RegExp(
 						`^${piece.replace(regexEscape, "\\$&")}$`, flags)
 			}
-		}
+		})
 		this.handlers.push(new Handler(args, regex, func, trailingAnything))
 	}
 

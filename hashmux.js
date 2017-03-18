@@ -13,21 +13,30 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"use strict"
+const pieceMatcher = /\{([a-zA-Z]+?)(:[^}]+?)?\}/
+const regexEscape = /[-[]\/\{\}\(\)\*\+\?\.\\\^\$\|]/
 
-const pieceMatcher = /\{([a-zA-Z]+?)(\:[^}]+?)?\}/
-const regexEscape = /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/
-
+/**
+ * An URL hash to JavaScript function router.
+ */
 class Hashmux {
+	/**
+	 * Create an instance of Hashmux.
+	 */
 	constructor() {
 		this.handlers = []
 		this.errors = {
-			404: function(data){
-				console.error("Page", data.page, "not found!")
-			}
+			404: (data) => console.error("Page", data.page, "not found!"),
 		}
 	}
 
+	/**
+	 * Run handlers for a certain error. If the error has no handlers, the
+	 * handler for error 520 will be run instead.
+	 *
+	 * @param {number} err  The error code.
+	 * @param {Object} data The data of the error.
+	 */
 	error(err, data) {
 		if (this.errors.hasOwnProperty(err)) {
 			this.errors[err](data)
@@ -36,73 +45,99 @@ class Hashmux {
 		}
 	}
 
+	/**
+	 * Register an error handler.
+	 *
+	 * @param {number} errCode The error code.
+	 * @param {func}   func    The handler function.
+	 */
 	handleError(errCode, func) {
 		this.errors[errCode] = func
 	}
 
+	/**
+	 * Register a path handler.
+	 *
+	 * @param {string} path            The path in Hashmux format.
+	 * @param {func}   func            The handler function.
+	 * @param {bool}   [caseSensitive] Whether or not the path should be case-
+	 *                                 sensitive.
+	 */
 	handle(path, func, caseSensitive) {
 		if (path === undefined || path.length === 0) {
 			path = "/"
-		} else if (typeof(path) === "function") {
+		} else if (typeof (path) === "function") {
 			func = path
 			path = "/"
 		}
-		if (typeof(func) !== "function") {
+		if (typeof (func) !== "function") {
 			func = function() {
 				console.error("No handler function provided for", path)
 			}
 		}
 
-		var pieces = path.split("/").slice(1)
-		var regex = []
-		var args = []
-		var flags = caseSensitive ? "i" : ""
+		let pieces = path.split("/").slice(1)
+		const regex = []
+		const args = []
+		const flags = caseSensitive ? "i" : ""
 
-		var trailingAnything = false
+		let trailingAnything = false
 		if (pieces.length > 1 && pieces[pieces.length - 1].length === 0) {
 			pieces = pieces.slice(0, pieces.length - 1)
 			trailingAnything = true
 		}
 
-		pieces.forEach(function(piece, i) {
-			var match = pieceMatcher.exec(piece)
+		pieces.forEach((piece, i) => {
+			let match = pieceMatcher.exec(piece)
 			if (match !== null && match.length > 1) {
 				match = match.slice(1)
 				args[i] = match[0]
 				if (match[1] !== undefined && match[1].length > 0) {
-					regex[i] = new RegExp("^" + match[1].substr(1) + "$", flags)
+					regex[i] = new RegExp(`^${match[1].substr(1)}$`, flags)
 				} else {
 					regex[i] = new RegExp("^.+$", flags)
 				}
 			} else {
-				regex[i] = new RegExp("^" + piece.replace(regexEscape, "\\$&") + "$", flags)
+				regex[i] = new RegExp(`^${piece.replace(regexEscape, "\\$&")}$`,
+						flags)
 			}
 		})
-		this.handlers[this.handlers.length] = new Handler(args, regex, func, trailingAnything)
+		this.handlers.push(new Handler(args, regex, func, trailingAnything))
 	}
 
+	/**
+	 * Register a Hashmux handler.
+	 *
+	 * @param {Handler} handler The handler object to register.
+	 */
 	handleRaw(handler) {
-		this.handlers[this.handlers.length] = handler
+		this.handlers.push(handler)
 	}
 
+	/**
+	 * Call the handler for the current path.
+	 *
+	 * This is automatically called from window.onhashchange if
+	 * {@link Hashmux#listen} has been called.
+	 */
 	update() {
-		var hash = window.location.hash
+		let hash = window.location.hash
 		if (hash.length === 0) {
 			hash = "#/"
 		}
 
-		var parts = hash.split("/").slice(1)
-		for(var i = 0; i < this.handlers.length; i++) {
-			var handler = this.handlers[i]
+		const parts = hash.split("/").slice(1)
+		for (let i = 0; i < this.handlers.length; i++) {
+			const handler = this.handlers[i]
 			if (handler === undefined) {
 				continue
 			}
-			var val = handler.handle(parts)
+			const val = handler.handle(parts)
 			if (val === undefined) {
 				continue
 			}
-			var output = handler.func(val)
-			if (output !== undefined && typeof(output) === "object") {
+			const output = handler.func(val)
+			if (output !== undefined && typeof (output) === "object") {
 				output.page = hash.substr(1)
 				if (output.status !== undefined && output.status !== 200) {
 					this.error(output.status, output)
@@ -110,19 +145,34 @@ class Hashmux {
 			}
 			return
 		}
-		this.error(404, {page: hash.substr(1)})
+		this.error(404, { page: hash.substr(1) })
 	}
 
+	/**
+	 * Register {@link Hashmux#update} as the hash change function and then call
+	 * {@link Hashmux#update}.
+	 */
 	listen() {
-		var mux = this
-		window.onhashchange = function() {
-			mux.update()
-		}
-		mux.update()
+		window.onhashchange = () => this.update()
+		this.update()
 	}
 }
 
+/**
+ * A Hashmux path handler.
+ */
 class Handler {
+	/**
+	 * Create a new Hashmux page handler.
+	 *
+	 * @param {string[]} args  The arguments in the path.
+	 * @param {Regex}   regex The regex to match paths.
+	 * @param {func}     func  The handler function.
+	 * @param {bool}     trailingAnything If false, only exact matches will
+	 *                                    pass. If true, it's enough that the
+	 *                                    beginning of the path matches the
+	 *                                    given regex.
+	 */
 	constructor(args, regex, func, trailingAnything) {
 		if (args === undefined) {
 			args = []
@@ -130,24 +180,31 @@ class Handler {
 		this.args = args
 		this.regex = regex
 		this.func = func
-		this.trailingAnything = trailingAnything ? true : false
+		this.trailingAnything = !!trailingAnything
 	}
 
+	/**
+	 * Try to match the regex of this Handler with the given parts and return
+	 * the values if matched.
+	 *
+	 * @param   {string[]} parts The parts of the path.
+	 * @returns {Object}         The arguments.
+	 */
 	handle(parts) {
 		if (this.regex.length > parts.length) {
 			return undefined
 		} else if (this.regex.length < parts.length && !this.trailingAnything) {
 			return undefined
 		}
-		var values = []
-		var i = 0
+		const values = []
+		let i = 0
 		for (; i < this.regex.length; i++) {
-			var match = this.regex[i].exec(parts[i])
+			const match = this.regex[i].exec(parts[i])
 			if (match === null || match.length === 0) {
 				return undefined
 			}
 
-			var key = values.length
+			let key = values.length
 			if (this.args.length > i && this.args[i] !== undefined) {
 				key = this.args[i]
 			}
@@ -155,7 +212,7 @@ class Handler {
 			values[key] = decodeURIComponent(match[0])
 		}
 		if (this.trailingAnything) {
-			for(; i < parts.length; i++) {
+			for (; i < parts.length; i++) {
 				values[i] = decodeURIComponent(parts[i])
 			}
 		}
@@ -164,6 +221,5 @@ class Handler {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-	module.exports.Hashmux = Hashmux
-	module.exports.Handler = Handler
+	module.exports = { Hashmux, Handler }
 }

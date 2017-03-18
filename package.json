@@ -1,6 +1,6 @@
 {
     "name": "hashmux",
-    "version": "2.1.3",
+    "version": "2.2.0",
     "description": "An URL hash to JavaScript function router",
     "repository": {
         "type": "git",
@@ -13,15 +13,27 @@
         "router",
         "mux"
     ],
-    "main": "hashmux.js",
+    "main": "dist/hashmux.js",
     "author": "Tulir Asokan",
     "license": "GPL-3.0",
     "bugs": {
         "url": "https://github.com/tulir/hashmux/issues"
     },
     "homepage": "https://github.com/tulir/hashmux",
-    "devDependencies": {
-        "uglify-js": "2.7.4",
-        "webpack": "1.13.3"
-    }
+    "dependencies": {
+        "babel-core": "6.24.0",
+        "babel-preset-es2015": "6.24.0",
+        "babel-preset-es2016": "6.22.0",
+        "babel-cli": "6.24.0",
+        "uglifyjs": "2.4.10"
+    },
+	"devDependencies": {
+		"eslint": "3.18.0",
+		"eslint-config-airbnb-base": "11.1.1",
+		"eslint-plugin-import": "2.2.0",
+		"eslint-plugin-jsdoc": "2.4.0"
+	},
+	"babel": {
+		"presets": ["es2015", "es2016"]
+	}
 }

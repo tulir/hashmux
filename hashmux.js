@@ -93,7 +93,12 @@ class Hashmux {
 			trailingAnything = true
 		}
 
-		for (const [index, piece] of Object.entries(pieces)) {
+		for (let index = 0; index < pieces.length; index++) {
+			const piece = pieces[index]
+			if (!piece) {
+				continue
+			}
+
 			let match = pieceMatcher.exec(piece)
 			if (match !== null && match.length > 1) {
 				match = match.slice(1)

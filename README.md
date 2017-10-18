@@ -11,6 +11,9 @@ var router = new Hashmux()
 router.handle("/", indexHandler)
 router.handle("/products", listProductsHandler)
 router.handle("/blog", blogHandler)
+
+// Call router.listen() to activate the router.
+router.listen()
 ```
 
 Hashmux supports more advanced routing too. The variables are given to the function as a map (well, actually an array with string keys).

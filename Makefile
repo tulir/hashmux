@@ -3,7 +3,7 @@ uglify = ./node_modules/.bin/uglifyjs
 
 minify:
 	mkdir -p dist
-	$(babel) hashmux.js | $(uglify) --screw-ie8 -mc -o dist/hashmux.js
+	$(babel) hashmux.js | $(uglify) -mco dist/hashmux.js
 
 publish: minify
 	git push && npm publish

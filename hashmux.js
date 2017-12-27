@@ -1,5 +1,5 @@
-// hashmux - An URL hash to JavaScript function router
-// Copyright (C) 2016 Tulir Asokan
+// hashmux - A light URL hash to JavaScript function router.
+// Copyright (C) 2016-2017 Maunium / Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,18 +62,45 @@ class Hashmux {
 	}
 
 	/**
+	 * Replace the current URL hash with a new one without keeping the previous
+	 * hash in the browser history.
+	 *
+	 * @param  {string} newHash The new URL hash.
+	 */
+	redirect(newHash) {
+		history.replaceState(undefined, undefined, newHash)
+	}
+
+	/**
+	 * Redirect the given path to another path.
+	 *
+	 * @param  {string}  [path="/"] The path in Hashmux format.
+	 * @param  {string|func} target The target path or a function that returns
+	 *                              the target path in Hashmux format.
+	 * @param  {bool} [caseSensitive=false] Whether or not the path should be
+	 *                                      case-sensitive.
+	 */
+	handleRedirect(path = "/", target, caseSensitive = false) {
+		if (typeof (target) !== "function") {
+			const targetCopy = target
+			target = () => targetCopy
+		}
+		this.handle(path, args => this.redirect(target(args)), caseSensitive)
+	}
+
+	/**
 	 * Register a path handler.
 	 *
-	 * @param {string} path            The path in Hashmux format.
-	 * @param {func}   func            The handler function.
-	 * @param {bool}   [caseSensitive] Whether or not the path should be case-
-	 *                                 sensitive.
+	 * @param {string} [path="/"] The path in Hashmux format.
+	 * @param {func}   func       The handler function.
+	 * @param  {bool} [caseSensitive=false] Whether or not the path should be
+	 *                                      case-sensitive.
 	 */
-	handle(path, func, caseSensitive) {
-		if (path === undefined || path.length === 0) {
-			path = "/"
-		} else if (typeof (path) === "function") {
+	handle(path = "/", func, caseSensitive = false) {
+		if (typeof (path) === "function") {
 			func = path
+			path = "/"
+		} else if (path === undefined || path.length === 0) {
 			path = "/"
 		}
 		if (typeof (func) !== "function") {
@@ -137,6 +164,10 @@ class Hashmux {
 			hash = "#/"
 		}
 
+		const query = Query.parse(hash)
+		// This just removes everything after and including the question mark.
+		hash = hash.split("?", 1)[0]
+
 		const parts = hash.split("/").slice(1)
 		for (const handler of this.handlers) {
 			const val = handler.handle(parts)
@@ -148,7 +179,7 @@ class Hashmux {
 				window.location.hash = this.oldHash
 				return
 			}
-			const output = handler.func(val)
+			const output = handler.func(val, query)
 			this.oldHash = hash
 			if (this.specialHandlers.posthandle(hash, val, output)) {
 				return
@@ -171,6 +202,168 @@ class Hashmux {
 	listen() {
 		window.onhashchange = () => this.update()
 		this.update()
+	}
+}
+
+/**
+ * A Query instance contains the query parameters of a hash URL.
+ */
+class Query {
+	/**
+	 * Create a new query parameter set.
+	 *
+	 * @param {string[]} parts The query parts to add initially.
+	 *                         In the format key=value.
+	 */
+	constructor(parts) {
+		this.values = new Map()
+		if (!parts) {
+			return
+		}
+		for (const part of parts) {
+			const separator = part.indexOf("=")
+			if (separator < 1) {
+				continue
+			}
+
+			const key = part.substr(0, separator)
+			const value = part.substr(separator + 1, part.length)
+			this.add(key, value)
+		}
+	}
+
+	/**
+	 * Convert this Query back into a string.
+	 *
+	 * @returns {string} All the values in this Query separated by an ampersand. No leading question mark.
+	 */
+	toString() {
+		return [...this.values]
+			.map(([key, values]) =>
+				values
+					.map(value => `${key}=${value}`)
+					.join("&"))
+			.join("&")
+	}
+
+	/**
+	 * Set the current URL hash query to the values stored in this Query object.
+	 *
+	 * @param {bool} [redirect=false] Whether or not to keep the current URL hash in history.
+	 */
+	setCurrentURL(redirect = false) {
+		let hash = window.location.hash
+		const queryStart = hash.indexOf("?")
+		if (queryStart >= 0) {
+			hash = hash.substr(0, queryStart)
+		}
+		hash = `${hash}?${this.toString()}`
+		if (redirect) {
+			history.replaceState(undefined, undefined, hash)
+		} else {
+			window.location.hash = hash
+		}
+	}
+
+	/**
+	 * Add a value to the given key directly to the current URL.
+	 *
+	 * @param {string} key   The key to which to add the value to.
+	 * @param {string} value The value to add.
+	 * @param {bool} [redirect] Whether or not to keep the current URL hash in history.
+	 * @returns {Query}         The parsed Query object.
+	 */
+	static add(key, value, redirect) {
+		const query = Query.parse()
+		query.set(key, value)
+		query.setCurrentURL(redirect)
+		return query
+	}
+
+	/**
+	 * Replace the value under the given key directly in the current URL.
+	 *
+	 * @param {string}          key   The key whose value to change.
+	 * @param {string|string[]} value The new value or list of values.
+	 * @param {bool} [redirect] Whether or not to keep the current URL hash in history.
+	 * @returns {Query}         The parsed Query object.
+	 */
+	static set(key, value, redirect) {
+		const query = Query.parse()
+		query.set(key, value)
+		query.setCurrentURL(redirect)
+		return query
+	}
+
+	/**
+	 * Parse the given URL hash or query string into a Query object.
+	 *
+	 * @param   {string} string The string to parse.
+	 * @returns {Query}         The parsed Query object.
+	 */
+	static parse(string = window.location.hash) {
+		const queryStart = string.indexOf("?")
+		if (queryStart > -1) {
+			string = string.substr(queryStart + 1)
+		}
+		return new Query(string.split("&"))
+	}
+
+	/**
+	 * Add a parameter to this set.
+	 *
+	 * @param {string} key   The key.
+	 * @param {string} value The value.
+	 */
+	add(key, value) {
+		const valueArray = this.values.get(key) || []
+		valueArray.push(value)
+		this.values.set(key, valueArray)
+	}
+
+	/**
+	 * Replace the value under the given key.
+	 *
+	 * @param {string}          key   The key whose value to change.
+	 * @param {string|string[]} value The new value or list of values.
+	 */
+	set(key, value) {
+		if (!Array.isArray(value)) {
+			value = [value]
+		}
+		this.values.set(key, value)
+	}
+
+	/**
+	 * Check if the query contained any values with the given key.
+	 *
+	 * @param   {string} key The key to check.
+	 * @returns {bool}       Whether or not any values with the given key exist.
+	 */
+	has(key) {
+		return this.values.has(key)
+	}
+
+	/**
+	 * Get all the values for the given key.
+	 *
+	 * @param   {string}   key The key to get.
+	 * @returns {string[]}     The values.
+	 */
+	getAll(key) {
+		return this.values.get(key)
+	}
+
+	/**
+	 * Get a specific value with the given key.
+	 *
+	 * @param   {string} key       The key to get.
+	 * @param   {number} [index=0] The index of the value to get.
+	 * @returns {string}           The value with the given index under the key.
+	 */
+	get(key, index = 0) {
+		const value = this.values.get(key)
+		return value ? value[index] : undefined
 	}
 }
 
@@ -237,5 +430,5 @@ class Handler {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-	module.exports = { Hashmux, Handler }
+	module.exports = { Hashmux, Handler, Query }
 }

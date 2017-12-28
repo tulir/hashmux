@@ -235,7 +235,8 @@ class Query {
 	/**
 	 * Convert this Query back into a string.
 	 *
-	 * @returns {string} All the values in this Query separated by an ampersand. No leading question mark.
+	 * @returns {string} All the values in this Query separated by an ampersand.
+	 *                   No leading question mark.
 	 */
 	toString() {
 		return [...this.values]
@@ -249,7 +250,8 @@ class Query {
 	/**
 	 * Set the current URL hash query to the values stored in this Query object.
 	 *
-	 * @param {bool} [redirect=false] Whether or not to keep the current URL hash in history.
+	 * @param {bool} [redirect=false] Whether or not to keep the current URL
+	 *                                hash in history.
 	 */
 	setCurrentURL(redirect = false) {
 		let hash = window.location.hash
@@ -270,8 +272,9 @@ class Query {
 	 *
 	 * @param {string} key   The key to which to add the value to.
 	 * @param {string} value The value to add.
-	 * @param {bool} [redirect] Whether or not to keep the current URL hash in history.
-	 * @returns {Query}         The parsed Query object.
+	 * @param {bool}   [redirect] Whether or not to keep the current URL hash in
+	 *                            history.
+	 * @returns {Query}           The parsed Query object.
 	 */
 	static add(key, value, redirect) {
 		const query = Query.parse()
@@ -285,7 +288,8 @@ class Query {
 	 *
 	 * @param {string}          key   The key whose value to change.
 	 * @param {string|string[]} value The new value or list of values.
-	 * @param {bool} [redirect] Whether or not to keep the current URL hash in history.
+	 * @param {bool} [redirect] Whether or not to keep the current URL hash in
+	 *                          history.
 	 * @returns {Query}         The parsed Query object.
 	 */
 	static set(key, value, redirect) {
@@ -345,17 +349,19 @@ class Query {
 	}
 
 	/**
-	 * Get all the values for the given key.
+	 * Get all the values for the given key. Returns an empty array if the given
+	 * key has no values.
 	 *
 	 * @param   {string}   key The key to get.
 	 * @returns {string[]}     The values.
 	 */
 	getAll(key) {
-		return this.values.get(key)
+		return this.values.get(key) || []
 	}
 
 	/**
-	 * Get a specific value with the given key.
+	 * Get a specific value with the given key. Returns undefined if the given
+	 * key or index doesn't have a value.
 	 *
 	 * @param   {string} key       The key to get.
 	 * @param   {number} [index=0] The index of the value to get.
@@ -363,7 +369,7 @@ class Query {
 	 */
 	get(key, index = 0) {
 		const value = this.values.get(key)
-		return value ? value[index] : undefined
+		return value && value.length > index ? value[index] : undefined
 	}
 }
 

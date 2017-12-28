@@ -228,7 +228,7 @@ class Query {
 
 			const key = part.substr(0, separator)
 			const value = part.substr(separator + 1, part.length)
-			this.add(key, value)
+			this.add(key, decodeURIComponent(value))
 		}
 	}
 
@@ -242,7 +242,7 @@ class Query {
 		return [...this.values]
 			.map(([key, values]) =>
 				values
-					.map(value => `${key}=${value}`)
+					.map(value => `${key}=${encodeURIComponent(value)}`)
 					.join("&"))
 			.join("&")
 	}
@@ -353,10 +353,11 @@ class Query {
 	 * key has no values.
 	 *
 	 * @param   {string}   key The key to get.
+	 * @param   {string} [defaultValue] The value to return if nothing is found.
 	 * @returns {string[]}     The values.
 	 */
-	getAll(key) {
-		return this.values.get(key) || []
+	getAll(key, defaultValue = []) {
+		return this.values.get(key) || defaultValue
 	}
 
 	/**
@@ -365,11 +366,12 @@ class Query {
 	 *
 	 * @param   {string} key       The key to get.
 	 * @param   {number} [index=0] The index of the value to get.
+	 * @param   {string} [defaultValue] The value to return if nothing is found.
 	 * @returns {string}           The value with the given index under the key.
 	 */
-	get(key, index = 0) {
+	get(key, index = 0, defaultValue = undefined) {
 		const value = this.values.get(key)
-		return value && value.length > index ? value[index] : undefined
+		return value && value.length > index ? value[index] : defaultValue
 	}
 }
 
